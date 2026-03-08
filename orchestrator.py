@@ -22,6 +22,7 @@ import schedule
 
 import config
 from agents.base_agent import BaseAgent
+from agents.conspiracy_theorist.agent import ConspiracyTheorist
 from agents.forecaster.agent import Forecaster
 from agents.geo_economic_historian.agent import GeoEconomicHistorian
 from agents.geopolitical_historian.agent import GeopoliticalHistorian
@@ -207,6 +208,7 @@ def generate_daily_brief(
     geo_econ = daily_summary.get("geo_economic_output") or {}
     recs = daily_summary.get("recommendations") or {}
     skeptic = daily_summary.get("skeptic_output") or {}
+    ct = daily_summary.get("ct_output") or {}
 
     _brief_agent = BaseAgent("daily_brief_writer", "kb/meta_evaluator")
 
@@ -225,6 +227,9 @@ def generate_daily_brief(
                 "themes": recs.get("themes", [])[:3],
             },
             "skeptic_challenges": skeptic.get("challenges", [])[:3] if isinstance(skeptic, dict) else [],
+            "ct_anomaly_level": ct.get("overall_anomaly_level", "unknown"),
+            "ct_top_anomalies": [a.get("description", "")[:100] for a in ct.get("top_anomalies", [])[:3]],
+            "ct_forecast_verdict": ct.get("forecast_cross_reference", {}).get("verdict", ""),
             "kb_synthesis": kb_synthesis[:600],
             "instruction": (
                 "Write a concise one-page macro investment daily brief. "
@@ -232,6 +237,7 @@ def generate_daily_brief(
                 "MACRO REGIME | RISK POSTURE | TOP SCENARIO | "
                 "KEY GEOPOLITICAL RISKS | KEY ECONOMIC RISKS | "
                 "PORTFOLIO POSITIONING | SKEPTIC CHALLENGES | "
+                "ANOMALY FLAGS (CT agent findings) | "
                 "CROSS-AGENT INTELLIGENCE | ACTION ITEMS. "
                 "Keep each section to 2-4 bullet points. "
                 "Tone: senior PM morning memo."
@@ -275,6 +281,7 @@ def run_once() -> dict[str, Any]:
         "geo_economic_output": None,
         "forecast_output": None,
         "skeptic_output": None,
+        "ct_output": None,
         "recommendations": None,
         "meta_evaluation": None,
         "kb_synthesis": None,
@@ -385,6 +392,23 @@ def run_once() -> dict[str, Any]:
         skeptic_output = _skip_stage("skeptic_output", last_run, "Missing forecast or market context.")
     daily_summary["skeptic_output"] = skeptic_output
 
+    # ── Stage 5b: Conspiracy Theorist (anomaly cross-reference) ──────────────
+    # Runs after Skeptic so it can flag what the consensus misses.
+    # Only included in Recommender if anomaly level is at or above threshold.
+    ct_output = _run_stage(
+        "ct_output",
+        lambda: ConspiracyTheorist().run(
+            forecast_output=forecast_output,
+            market_output=market_output,
+            signal_output=signal_output,
+            geo_political_output=geo_political_output,
+            geo_economic_output=geo_economic_output,
+        ),
+        last_run,
+        ["forecast_output", "signal_output", "market_output"],
+    )
+    daily_summary["ct_output"] = ct_output
+
     # ── Stage 6: Recommender ──────────────────────────────────────────────────
     if forecast_output and signal_output and market_output and skeptic_output:
         recommendations = _run_stage(
@@ -423,6 +447,7 @@ def run_once() -> dict[str, Any]:
                 "risk_label": (market_output or {}).get("risk_label"),
                 "top_scenario": (forecast_output or {}).get("top_scenario"),
                 "geo_regime": (geo_political_output or {}).get("synthesis", {}).get("geopolitical_regime"),
+                "ct_anomaly_level": (ct_output or {}).get("overall_anomaly_level"),
             },
             default=str,
         ),

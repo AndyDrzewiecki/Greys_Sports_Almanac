@@ -155,6 +155,9 @@ def check_kb_files() -> dict:
         "kb/meta_evaluator/memory.md",
         "kb/geopolitical_historian/memory.md",
         "kb/geo_economic_historian/memory.md",
+        "kb/conspiracy_theorist/memory.md",
+        "kb/conspiracy_theorist/economist/memory.md",
+        "kb/conspiracy_theorist/political_science/memory.md",
     ]
     base = config.BASE_DIR
     missing = [p for p in expected if not (base / p).exists()]

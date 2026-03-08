@@ -119,3 +119,50 @@ SOURCE_WEIGHTS: dict[str, float] = {
 }
 
 DEFAULT_SOURCE_WEIGHT = 0.60
+
+# ── Conspiracy Theorist configuration ─────────────────────────────────────────
+# Countries monitored by the CT agent (12 base + 4 extended)
+CT_COUNTRIES = [
+    "US", "CN", "RU", "DE", "JP", "SA", "IR", "VE", "BR", "IN", "GB", "FR",
+    "IL", "UA", "MX", "NG",
+]
+
+# CT source credibility — investigative-first hierarchy
+CT_SOURCE_WEIGHTS: dict[str, float] = {
+    "ICIJ": 1.0,
+    "icij.org": 1.0,
+    "OCCRP": 0.97,
+    "occrp.org": 0.97,
+    "ProPublica": 0.97,
+    "propublica.org": 0.97,
+    "The Intercept": 0.95,
+    "theintercept.com": 0.95,
+    "Bellingcat": 0.93,
+    "bellingcat.com": 0.93,
+    "Forbidden Stories": 0.93,
+    "declassified.uk": 0.90,
+    "opendemocracy.net": 0.88,
+    "reuters.com": 0.82,
+    "apnews.com": 0.82,
+    "ft.com": 0.80,
+    "bloomberg.com": 0.78,
+    "wsj.com": 0.75,
+    "nytimes.com": 0.70,
+    "washingtonpost.com": 0.70,
+    "guardian.com": 0.72,
+    "bbc.com": 0.70,
+    "cnn.com": 0.50,
+    "foxnews.com": 0.45,
+    "government_statement": 0.40,   # always cross-check
+}
+
+CT_DEFAULT_SOURCE_WEIGHT = 0.55     # more skeptical default than general agents
+
+# Minimum confidence threshold to persist a CT finding
+CT_FINDING_CONFIDENCE_THRESHOLD = 0.55
+
+# Minimum anomaly level to include CT output in Orchestrator synthesis
+CT_ANOMALY_LEVEL_THRESHOLD = "moderate"  # "low" | "moderate" | "elevated" | "high"
+
+# CT agent cadence — runs every pipeline cycle but deep country analysis cached monthly
+CT_CADENCE_DAYS = 30

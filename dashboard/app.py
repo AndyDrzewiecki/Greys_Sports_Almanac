@@ -85,6 +85,7 @@ skeptic_output   = latest_run.get("skeptic_output")   or {}
 recommendations  = latest_run.get("recommendations")  or {}
 geo_pol_output   = latest_run.get("geo_political_output") or {}
 geo_econ_output  = latest_run.get("geo_economic_output")  or {}
+ct_output        = latest_run.get("ct_output")        or {}
 daily_brief      = latest_run.get("daily_brief")      or ""
 kb_synthesis     = latest_run.get("kb_synthesis")     or ""
 
@@ -111,12 +112,13 @@ with col_health:
 
 # ── Top KPI row ───────────────────────────────────────────────────────────────
 
-k1, k2, k3, k4, k5 = st.columns(5)
+k1, k2, k3, k4, k5, k6 = st.columns(6)
 regime = signal_output.get("regime", "—")
 risk_label = market_output.get("risk_label", "—")
 top_scenario = forecast_output.get("top_scenario", "—")
 geo_regime = (geo_pol_output.get("synthesis") or {}).get("geopolitical_regime", "—")
 econ_regime = (geo_econ_output.get("synthesis") or {}).get("global_economic_regime", "—")
+ct_anomaly_level = ct_output.get("overall_anomaly_level", "—")
 
 with k1:
     st.markdown(badge(f"Macro: {regime}", risk_color(regime)), unsafe_allow_html=True)
@@ -129,6 +131,9 @@ with k4:
     st.markdown(badge(f"Geo: {geo_regime}", risk_color(geo_regime)), unsafe_allow_html=True)
 with k5:
     st.markdown(badge(f"Econ: {econ_regime}", risk_color(econ_regime)), unsafe_allow_html=True)
+with k6:
+    _ct_colors = {"low": "#2e7d32", "moderate": "#f9a825", "elevated": "#ef6c00", "high": "#c62828"}
+    st.markdown(badge(f"CT: {ct_anomaly_level}", _ct_colors.get(ct_anomaly_level, "#546e7a")), unsafe_allow_html=True)
 
 st.divider()
 
@@ -136,11 +141,11 @@ st.divider()
 
 (
     tab_brief, tab_macro, tab_geo_pol, tab_geo_econ,
-    tab_backtest, tab_kb, tab_audit
+    tab_ct, tab_backtest, tab_kb, tab_audit
 ) = st.tabs([
     "📋 Daily Brief", "📈 Macro Dashboard",
     "🌍 Political Map", "💹 Economic Flows",
-    "📚 Backtest History", "🧠 KB Health", "🔎 Audit Log",
+    "🕵️ Anomaly Tracker", "📚 Backtest History", "🧠 KB Health", "🔎 Audit Log",
 ])
 
 
@@ -469,6 +474,129 @@ with tab_kb:
             pass
     if kb_files:
         st.dataframe(pd.DataFrame(kb_files), use_container_width=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB: Anomaly Tracker (Conspiracy Theorist)
+# ══════════════════════════════════════════════════════════════════════════════
+with tab_ct:
+    st.subheader("Anomaly Tracker — Follow the Money")
+    st.caption(
+        "Findings from the Conspiracy Theorist agent. Tracks the gap between official narratives "
+        "and documented reality. Source hierarchy: ICIJ > investigative journalism > mainstream. "
+        "All findings require ≥2 independent credible sources before flagging."
+    )
+
+    # Overall anomaly level
+    ct_level = ct_output.get("overall_anomaly_level", "—")
+    ct_conf = ct_output.get("confidence", 0.0)
+    _ct_colors = {"low": "#2e7d32", "moderate": "#f9a825", "elevated": "#ef6c00", "high": "#c62828"}
+    col_lvl, col_conf, col_verdict = st.columns(3)
+    with col_lvl:
+        st.markdown(badge(f"Anomaly Level: {ct_level.upper()}", _ct_colors.get(ct_level, "#546e7a")), unsafe_allow_html=True)
+    with col_conf:
+        st.markdown(badge(f"CT Confidence: {ct_conf:.0%}", "#37474f"), unsafe_allow_html=True)
+    with col_verdict:
+        verdict = (ct_output.get("forecast_cross_reference") or {}).get("verdict", "—")
+        _v_colors = {"confirms": "#2e7d32", "partially_confirms": "#f9a825",
+                     "flags_blind_spots": "#ef6c00", "contradicts": "#c62828"}
+        st.markdown(badge(f"vs Forecast: {verdict}", _v_colors.get(verdict, "#546e7a")), unsafe_allow_html=True)
+
+    st.divider()
+
+    # Top anomalies
+    top_anomalies = ct_output.get("top_anomalies") or []
+    if top_anomalies:
+        st.subheader("Top Flagged Anomalies")
+        for i, anomaly in enumerate(top_anomalies[:5], 1):
+            with st.expander(f"#{i} — {anomaly.get('description', 'Untitled')[:80]} (conf: {anomaly.get('confidence', 0):.0%})"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown("**Countries Involved**")
+                    st.write(", ".join(anomaly.get("countries_involved") or []))
+                    st.markdown("**Financial Mechanism**")
+                    st.write(anomaly.get("financial_mechanism") or "—")
+                    st.markdown("**Market Impact Potential**")
+                    st.write(anomaly.get("market_impact_potential") or "—")
+                with c2:
+                    st.markdown("**Evidence Quality**")
+                    st.write(anomaly.get("evidence_quality") or "—")
+                    st.markdown("**Reference Anchors**")
+                    for ref in (anomaly.get("reference_anchors") or []):
+                        st.write(f"• {ref}")
+                if anomaly.get("economist_analysis"):
+                    st.markdown("**Economic Mechanism**")
+                    st.info(anomaly["economist_analysis"])
+                if anomaly.get("political_analysis"):
+                    st.markdown("**Political Structure**")
+                    st.warning(anomaly["political_analysis"])
+                sectors = anomaly.get("sectors_affected") or []
+                if sectors:
+                    st.markdown(f"**Sectors Affected:** {', '.join(sectors)}")
+    else:
+        st.info("No anomalies flagged in the current run. Check back after the next pipeline execution.")
+
+    st.divider()
+
+    # Forecast cross-reference
+    cross_ref = ct_output.get("forecast_cross_reference") or {}
+    adjustments = cross_ref.get("adjustments") or []
+    if adjustments:
+        st.subheader("Forecast Adjustments Flagged by CT")
+        adj_df = pd.DataFrame(adjustments)
+        st.dataframe(adj_df, use_container_width=True)
+        st.write(cross_ref.get("blind_spot_summary") or "")
+        key_evidence = cross_ref.get("key_evidence") or []
+        if key_evidence:
+            with st.expander("Key Evidence"):
+                for e in key_evidence:
+                    st.write(f"• {e}")
+
+    # CT Portfolio Theory (secondary hypothesis)
+    ct_theory = ct_output.get("ct_portfolio_theory") or {}
+    if ct_theory and ct_theory.get("thesis_summary"):
+        st.divider()
+        st.subheader("CT Secondary Portfolio Theory")
+        st.caption("Alternative hypothesis based on documented money trails. Research use only.")
+        st.write(ct_theory.get("thesis_summary", ""))
+        alloc = (ct_theory.get("portfolio_allocation") or {}).get("sectors") or []
+        if alloc:
+            alloc_df = pd.DataFrame(alloc)
+            st.dataframe(alloc_df, use_container_width=True)
+        money_signals = ct_theory.get("key_money_trail_signals") or []
+        if money_signals:
+            with st.expander("Money Trail Signals"):
+                for s in money_signals:
+                    st.write(f"• {s}")
+        st.caption(ct_theory.get("disclaimer", "Research only. Not investment advice."))
+
+    st.divider()
+
+    # Historical CT findings from DB
+    st.subheader("Historical Anomaly Database")
+    ct_findings = load_table(
+        "SELECT timestamp, year_month, countries_involved, anomaly_description, "
+        "confidence, status FROM conspiracy_findings ORDER BY timestamp DESC LIMIT 50"
+    )
+    if not ct_findings.empty:
+        st.dataframe(ct_findings, use_container_width=True)
+    else:
+        st.caption("Historical findings will accumulate here as the pipeline runs over time.")
+
+    # Live portfolio tracking
+    st.subheader("Live Portfolio Self-Review")
+    live_recs = load_table(
+        "SELECT year_month, top_scenario, confidence, data_source, "
+        "return_1yr, return_5yr, vs_spy_1yr, vs_spy_5yr "
+        "FROM live_portfolio_recommendations ORDER BY timestamp DESC LIMIT 30"
+    )
+    if not live_recs.empty:
+        st.dataframe(live_recs, use_container_width=True)
+        scored = live_recs[live_recs["return_1yr"].notna()]
+        if not scored.empty:
+            st.line_chart(scored.set_index("year_month")[["return_1yr", "vs_spy_1yr"]])
+    else:
+        st.caption("Live portfolio recommendations and 1/5/7/10-year outcome tracking will appear here.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

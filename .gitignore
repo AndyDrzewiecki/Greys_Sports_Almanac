@@ -14,9 +14,11 @@ dist/
 build/
 *.egg
 
-# Data & storage (local runtime files)
+# Data & storage (local runtime files only — NOT source code)
 data/
-storage/
+storage/*.db
+storage/*.json
+storage/__pycache__/
 
 # Virtual environments
 venv/
