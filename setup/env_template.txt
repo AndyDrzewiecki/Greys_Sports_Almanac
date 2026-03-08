@@ -1,0 +1,21 @@
+# ============================================================
+# Market Watch Agents — .env template
+# Copy to mwa/.env and fill in your values.
+# DO NOT commit .env to git.
+# ============================================================
+
+# ── LLM — ZBook 17 (primary / reasoning) ────────────────────
+OLLAMA_PRIMARY_URL=http://localhost:11434
+OLLAMA_REASONING_MODEL=llama3.1:70b
+
+# ── LLM — EliteBook 840 G2 (secondary / extraction + fast) ──
+OLLAMA_SECONDARY_URL=http://192.168.1.XXX:11434
+OLLAMA_EXTRACTION_MODEL=llama3.1:8b
+OLLAMA_FAST_MODEL=llama3.1:8b
+
+# ── Database — Mini PC PostgreSQL ────────────────────────────
+# Leave blank to use local SQLite (good for dev / single-machine)
+DB_URL=postgresql://mwagent:yourpassword@192.168.1.YYY/market_watch
+
+# ── Data APIs ────────────────────────────────────────────────
+FRED_API_KEY=your_fred_api_key_here
